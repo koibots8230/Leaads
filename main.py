@@ -17,9 +17,10 @@ orange = (255,50,0)
 purple = (100,0,127)
 
 
-pina = Pin(8, Pin.IN, Pin.PULL_UP)
-pinb = Pin(7, Pin.IN, Pin.PULL_UP)
-pinc = Pin(6, Pin.IN, Pin.PULL_UP)
+pina = Pin(29, Pin.IN, Pin.PULL_UP)
+pinb = Pin(28, Pin.IN, Pin.PULL_UP)
+pinc = Pin(27, Pin.IN, Pin.PULL_UP)
+pind = Pin(26, Pin.IN, Pin.PULL_UP)
 
 def read_pins():
     num = 0
@@ -29,6 +30,8 @@ def read_pins():
         num += 2
     if not pinc.value():
         num += 4
+    if not pind.value():
+        num += 8
     return num    
 
 #you need an even number of leds to work
@@ -111,7 +114,7 @@ ALL_CMDS = {
     0: off_cmd,
     1: showoff_cmd,
     2: summon_cmd,
-    3: snek_cmd,
+    4: snek_cmd,
 }
 
 try:
