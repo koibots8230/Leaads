@@ -7,7 +7,7 @@ ledpin = Pin(5, Pin.OUT)
 
 lilad = Pin(16, Pin.OUT)
 
-numleds = 30
+numleds = 79
 
 red = (128,0,0)
 green = (0,128,0)
