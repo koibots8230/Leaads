@@ -17,20 +17,20 @@ orange = (255,50,0)
 purple = (100,0,127)
 
 
-pina = Pin(29, Pin.IN, Pin.PULL_UP)
-pinb = Pin(28, Pin.IN, Pin.PULL_UP)
-pinc = Pin(27, Pin.IN, Pin.PULL_UP)
-pind = Pin(26, Pin.IN, Pin.PULL_UP)
+pina = Pin(29, Pin.IN, Pin.PULL_DOWN)
+pinb = Pin(28, Pin.IN, Pin.PULL_DOWN)
+pinc = Pin(27, Pin.IN, Pin.PULL_DOWN)
+pind = Pin(26, Pin.IN, Pin.PULL_DOWN)
 
 def read_pins():
     num = 0
-    if not pina.value():
+    if pina.value():
         num += 1
-    if not pinb.value():
+    if pinb.value():
         num += 2
-    if not pinc.value():
+    if pinc.value():
         num += 4
-    if not pind.value():
+    if pind.value():
         num += 8
     return num    
 
@@ -119,6 +119,7 @@ ALL_CMDS = {
 
 try:
     while True:
+        haha[0] = (red)
         cmd = read_pins()
         print("you been got, command"+str(cmd))
         if cmd in ALL_CMDS:
