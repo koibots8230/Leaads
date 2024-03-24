@@ -7,7 +7,7 @@ ledpin = Pin(5, Pin.OUT)
 
 lilad = Pin(16, Pin.OUT)
 
-numleds = 79
+numleds = 80
 
 red = (128,0,0)
 green = (0,128,0)
@@ -111,19 +111,31 @@ off_cmd = OffCommand(neo)
 
 
 ALL_CMDS = {
-    0: off_cmd,
     1: showoff_cmd,
     2: summon_cmd,
     4: snek_cmd,
 }
 
 try:
+    haha[0] = red
+    haha.write()
+    cur_cmd = -1
     while True:
-        haha[0] = (red)
+    
         cmd = read_pins()
-        print("you been got, command"+str(cmd))
-        if cmd in ALL_CMDS:
+        if cmd > 0 and cmd not in ALL_CMDS:
+            print("you been off'd, command"+str(cmd))
+            cur_cmd = -1
+            off_cmd.execute()
+        elif cmd in ALL_CMDS:
+            print("you been got, command"+str(cmd))
+            cur_cmd = cmd
             ALL_CMDS[cmd].execute()
+        elif cur_cmd > 0:
+            ALL_CMDS[cur_cmd].execute()
+        else:
+            off_cmd.execute()
+           
         sleep(.125)
         
 finally:
