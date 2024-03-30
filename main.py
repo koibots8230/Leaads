@@ -1,6 +1,6 @@
 from machine import Pin, SPI
-from time import sleep
-from neopixel import NeoPixel 
+from utime import sleep
+from neopixel import NeoPixel
 #https://docs.micropython.org/en/latest/library/neopixel.html
 
 ledpin = Pin(5, Pin.OUT)
@@ -32,78 +32,111 @@ def read_pins():
         num += 4
     if pind.value():
         num += 8
-    return num    
+
+    return num
+
+
+def off_handler(off_cmd, all_cmds):
+   
+    print('Turning active=False')
+    for mycmd in all_cmds.values():
+        mycmd.active = False
+       
+    sleep(1)
+    off_cmd.execute()
+   
 
 #you need an even number of leds to work
 class Snek:
     def __init__(self,neo):
         self.neo = neo
-    
+        self.active = False
+   
     def execute(self):
+       
+        self.active = True
+
         self.neo.fill(purple)
         self.neo.write()
         hlfway = int(numleds/2)
         for i in range(0,hlfway):
+            if self.active is False:
+                break
             self.neo[i+hlfway] = green
             self.neo[hlfway-(i+1)] = green
             self.neo.write()
             sleep(.05)
+           
         for i in range(0,hlfway):
+            if self.active is False:
+                break
             self.neo[i] = purple
             self.neo[numleds-(i+1)]= purple
             self.neo.write()
             sleep(.05)
-            
+           
 
 class ShowOff:
    
    def __init__(self,neo):
         self.neo = neo
-        
+        self.active = False
+       
    def execute(self):
-       self.neo.fill(orange)
-       self.neo.write()
-       for i in range(numleds):
-            sleep(.05)
+
+        self.active = True
+       
+        self.neo.fill(orange)
+        self.neo.write()
+        for i in range(numleds):
+            if self.active is False:
+                break
             if i > 0:
                 self.neo[i-1] = orange
             self.neo[i] = purple
             self.neo.write()
-        
+            sleep(.05)
+       
 class SummonThePlayers:
-    
+   
     def __init__(self,neo):
         self.neo = neo
+        self.active = False
      
     @staticmethod
     def scale(num):
         return int(num**3/256**2)
-    
+   
     def execute(self):
+
+        self.active = True
+       
         for i in range(0,256,4):
+            if self.active is False:
+                break
             self.neo.fill((0,self.scale(i),self.scale(i)))
             self.neo.write()
             sleep(0.01)
+           
         for i in range(255,-1,-4):
+            if self.active is False:
+                break
             self.neo.fill((0,self.scale(i),self.scale(i)))
             self.neo.write()
             sleep(0.002)
-   
-    def stop(self):
-        self.neo.fill(off)
-        self.neo.write()
 
 
 class OffCommand:
     def __init__(self,neo):
         self.neo = neo
-    
+   
     def execute(self):
         self.neo.fill(off)
         self.neo.write()
 
 neo = NeoPixel(ledpin, numleds)
 haha = NeoPixel(lilad, 1)
+
 showoff_cmd = ShowOff(neo)
 summon_cmd = SummonThePlayers(neo)
 snek_cmd = Snek(neo)
@@ -113,35 +146,38 @@ off_cmd = OffCommand(neo)
 ALL_CMDS = {
     1: showoff_cmd,
     2: summon_cmd,
-    4: snek_cmd,
+    4: snek_cmd
 }
 
+
+pind.irq(trigger=Pin.IRQ_RISING, handler=lambda p: off_handler(off_cmd, ALL_CMDS))
+
 try:
-    haha[0] = red
+    haha[0] = (red)
     haha.write()
-    cur_cmd = -1
+
     while True:
-    
+     
         cmd = read_pins()
-        if cmd > 0 and cmd not in ALL_CMDS:
-            print("you been off'd, command"+str(cmd))
-            cur_cmd = -1
-            off_cmd.execute()
-        elif cmd in ALL_CMDS:
-            print("you been got, command"+str(cmd))
-            cur_cmd = cmd
+        if cmd in ALL_CMDS:
+            print("you been got, command", cmd)
+            haha[0] = (green)
+            haha.write()
+            off_handler(off_cmd, ALL_CMDS)
             ALL_CMDS[cmd].execute()
-        elif cur_cmd > 0:
-            ALL_CMDS[cur_cmd].execute()
-        else:
-            off_cmd.execute()
+        elif cmd == 0:
+            for mycmd in ALL_CMDS.values():
+                if mycmd.active is True:
+                    mycmd.execute()
+                    break
            
+        haha[0] = (red)
+        haha.write()
+       
         sleep(.125)
-        
+       
 finally:
     neo.fill(off)
     neo.write()
     haha[0]= (off)
     haha.write()
-    
-    
