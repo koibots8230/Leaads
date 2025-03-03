@@ -33,15 +33,6 @@ def interpolate(start_color, end_color, steps) -> list[tuple[int, int, int]]:
         result[result_indx] = (int(result_red), int(result_green), int(result_blue))  
     return result
 
-def to_int(s):
-    try:
-        return int(s)
-    except ValueError:
-        return None
-    except TypeError:
-        return None
-    
-    return None    
 
 class Animator:
     pixels: NeoPixel
@@ -279,16 +270,16 @@ def all_rainbow_gradient() -> list[list[tuple[int, int, int]]]:
     return result
 
 patterns = {
-    0: (snek_forward, 0.5),
-    1: (snek_backward, 0.25),
-    2: (all_teal, 0.1),
-    3: (rainbow_forward, 1.0),
-    4: (rainbow_blinking_forward, 0.01),
-    5: (all_rainbow_gradient, .10),
-    6: (all_red, 1.0),
-    7: (all_orange, 1.0),
-    8: (all_green, 1.0),
-    9: (all_blue, 1.0)
+    b"0": (snek_forward, 0.5),
+    b"1": (snek_backward, 0.25),
+    b"2": (all_teal, 0.1),
+    b"3": (rainbow_forward, 1.0),
+    b"4": (rainbow_blinking_forward, 0.01),
+    b"5": (all_rainbow_gradient, .10),
+    b"6": (all_red, 1.0),
+    b"7": (all_orange, 1.0),
+    b"8": (all_green, 1.0),
+    b"9": (all_blue, 1.0)
 }
 
 switch_a = Pin(12, Pin.IN, Pin.PULL_UP)
@@ -303,17 +294,12 @@ try:
 
     while True:
         selection = uart.read(1)
-        #print(selection)
         
-        my_choice = to_int(selection)
-        #print(my_choice)
-        
-        #my_choice = 4
-        if my_choice in patterns:
-            frames_function, sleep_duration = patterns[my_choice]
+        if selection in patterns:
+            frames_function, sleep_duration = patterns[selection]
             animator.set_animation(frames_function(), sleep_duration)
         
-                 
+                
         animator.advance()
         
 finally:
