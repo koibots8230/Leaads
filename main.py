@@ -1,183 +1,321 @@
-from machine import Pin, SPI
-from utime import sleep
+from machine import Pin, UART
+from time import sleep
+from machine import Pin
 from neopixel import NeoPixel
-#https://docs.micropython.org/en/latest/library/neopixel.html
+from pimoroni import RGBLED
+from plasma import plasma2040
 
-ledpin = Pin(5, Pin.OUT)
-
-lilad = Pin(16, Pin.OUT)
-
-numleds = 80
-
-red = (128,0,0)
-green = (0,128,0)
-blue = (0,0,128)
-off = (0,0,0)
-orange = (255,50,0)
-purple = (100,0,127)
-
-
-pina = Pin(29, Pin.IN, Pin.PULL_DOWN)
-pinb = Pin(28, Pin.IN, Pin.PULL_DOWN)
-pinc = Pin(27, Pin.IN, Pin.PULL_DOWN)
-pind = Pin(26, Pin.IN, Pin.PULL_DOWN)
-
-def read_pins():
-    num = 0
-    if pina.value():
-        num += 1
-    if pinb.value():
-        num += 2
-    if pinc.value():
-        num += 4
-    if pind.value():
-        num += 8
-
-    return num
+off: tuple[int, int, int] = (0, 0, 0)
+red: tuple[int, int, int] = (255, 0, 0)
+orange: tuple[int, int, int] = (255, 50, 0)
+green = (0, 255, 0)
+teal = (0, 139, 139)
+blue = (0, 0, 255)
+purple: tuple[int, int, int] = (100, 0, 127)
+white = (255, 255, 255)
+num_leds: int = 21
+interpolation_factor = 5
+#they are tuples which cannot be changed
 
 
-def off_handler(off_cmd, all_cmds):
-   
-    print('Turning active=False')
-    for mycmd in all_cmds.values():
-        mycmd.active = False
-       
-    sleep(1)
-    off_cmd.execute()
-   
+def interpolate(start_color, end_color, steps) -> list[tuple[int, int, int]]:
+    result = [white,]*steps
+    result[0] = start_color
+    result[-1] = end_color
+    red_slope = (end_color[0] - start_color[0])/steps
+    green_slope = (end_color[1] - start_color[1])/steps
+    blue_slope = (end_color[2] - start_color[2])/steps
+    for indx in range(steps - 2):
+        result_indx = indx + 1
+        result_red = red_slope * result_indx + start_color[0]
+        result_green = green_slope * result_indx + start_color[1]
+        result_blue = blue_slope * result_indx + start_color[2]
+        result[result_indx] = (int(result_red), int(result_green), int(result_blue))  
+    return result
 
-#you need an even number of leds to work
-class Snek:
-    def __init__(self,neo):
-        self.neo = neo
-        self.active = False
-   
-    def execute(self):
-       
-        self.active = True
+def to_int(s):
+    try:
+        return int(s)
+    except ValueError:
+        return None
+    except TypeError:
+        return None
+    
+    return None    
 
-        self.neo.fill(purple)
-        self.neo.write()
-        hlfway = int(numleds/2)
-        for i in range(0,hlfway):
-            if self.active is False:
-                break
-            self.neo[i+hlfway] = green
-            self.neo[hlfway-(i+1)] = green
-            self.neo.write()
-            sleep(.05)
-           
-        for i in range(0,hlfway):
-            if self.active is False:
-                break
-            self.neo[i] = purple
-            self.neo[numleds-(i+1)]= purple
-            self.neo.write()
-            sleep(.05)
-           
+class Animator:
+    pixels: NeoPixel
+    frames: list[list[tuple[int,int,int]]]
+    current_frame_idx: int
 
-class ShowOff:
-   
-   def __init__(self,neo):
-        self.neo = neo
-        self.active = False
-       
-   def execute(self):
+    sleep_duration: int
 
-        self.active = True
-       
-        self.neo.fill(orange)
-        self.neo.write()
-        for i in range(numleds):
-            if self.active is False:
-                break
-            if i > 0:
-                self.neo[i-1] = orange
-            self.neo[i] = purple
-            self.neo.write()
-            sleep(.05)
-       
-class SummonThePlayers:
-   
-    def __init__(self,neo):
-        self.neo = neo
-        self.active = False
-     
-    @staticmethod
-    def scale(num):
-        return int(num**3/256**2)
-   
-    def execute(self):
+    def __init__(self, pixels: NeoPixel):
+        self.pixels = pixels
+        self.current_frame_idx = 0
+        self.frames = []
+        self.sleep_duration = 1.0
 
-        self.active = True
-       
-        for i in range(0,256,4):
-            if self.active is False:
-                break
-            self.neo.fill((0,self.scale(i),self.scale(i)))
-            self.neo.write()
-            sleep(0.01)
-           
-        for i in range(255,-1,-4):
-            if self.active is False:
-                break
-            self.neo.fill((0,self.scale(i),self.scale(i)))
-            self.neo.write()
-            sleep(0.002)
+    def set_animation(self, frames: list[list[tuple[int,int,int]]], sleep_duration: float):
+        
+        if self.frames != frames:
+            self.current_frame_idx = 0
+            self.frames = frames
+        self.sleep_duration = sleep_duration
+        
+    def get_current_frame(self):
+        return self.frames[self.current_frame_idx]
 
+    def advance(self):
+        """
+        Update the LEDs to the next frame
+        """
+        if len(self.frames) > 0:
+        
+            for idx, led in enumerate(self.get_current_frame()):
+                self.pixels[idx] = led
 
-class OffCommand:
-    def __init__(self,neo):
-        self.neo = neo
-   
-    def execute(self):
-        self.neo.fill(off)
-        self.neo.write()
+            self.pixels.write()
+            sleep(self.sleep_duration)
+            self.current_frame_idx += 1
 
-neo = NeoPixel(ledpin, numleds)
-haha = NeoPixel(lilad, 1)
+            # Check for current frame getting larger than our array
+            if self.current_frame_idx >= len(self.frames):
+                self.current_frame_idx = 0
 
-showoff_cmd = ShowOff(neo)
-summon_cmd = SummonThePlayers(neo)
-snek_cmd = Snek(neo)
-off_cmd = OffCommand(neo)
+def snek_forward() -> list[list[tuple[int, int, int]]]:
+    result: list[list[tuple[int, int, int]]] = []
+    for i in range(0, num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = purple
+        result.append(frame)
 
+    return result
 
-ALL_CMDS = {
-    1: showoff_cmd,
-    2: summon_cmd,
-    4: snek_cmd
+def snek_backward() -> list[list[tuple[int, int, int]]]:
+    result = []
+    for i in range(num_leds - 1, -1, -1):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = blue
+        result.append(frame)
+    
+    return result
+
+def all_teal() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [teal]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_red() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [red]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_orange() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [orange]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_green() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [green]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_blue() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [blue]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_purple() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [purple]*num_leds
+    result.append(frame)
+    
+    return result
+
+def all_white() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [white]*num_leds
+    result.append(frame)
+    
+    return result
+
+def rainbow_forward() -> list[list[tuple[int, int, int]]]:
+    result = []
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = red
+        result.append(frame)
+            
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = orange
+        result.append(frame)
+            
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = green
+        result.append(frame)
+            
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = teal
+        result.append(frame)
+        
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = blue
+        result.append(frame)
+            
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = purple
+        result.append(frame)
+        
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = white
+        result.append(frame)
+    
+    return result 
+
+def rainbow_blinking_forward() -> list[list[tuple[int, int, int]]]:
+    result = []
+    for i in range(num_leds):
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = red
+        result.append(frame)
+        result.append([off]*num_leds)
+            
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = orange
+        result.append(frame)
+        result.append([off]*num_leds)
+            
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = green
+        result.append(frame)
+        result.append([off]*num_leds)
+            
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = teal
+        result.append(frame)
+        result.append([off]*num_leds)
+
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = blue
+        result.append(frame)
+        result.append([off]*num_leds)
+
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = purple
+        result.append(frame)
+        result.append([off]*num_leds)
+
+        frame: list[tuple[int, int, int]] = [off]*num_leds
+        frame[i] = white
+        result.append(frame)
+        result.append([off]*num_leds)
+
+    return result
+
+def all_rainbow_gradient() -> list[list[tuple[int, int, int]]]:
+    result = []
+    frame: list[tuple[int, int, int]] = [red]*num_leds
+    result.append(frame)
+    
+    red_to_orange = interpolate(red, orange, interpolation_factor)  
+    for color in red_to_orange:
+        result.append([color]*num_leds)
+
+    frame: list[tuple[int, int, int]] = [orange]*num_leds
+    result.append(frame)
+    
+    orange_to_green = interpolate(orange, green, interpolation_factor*2)  
+    for color in orange_to_green:
+        result.append([color]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [green]*num_leds
+    result.append(frame)
+    
+    green_to_teal = interpolate(green, teal, interpolation_factor)  
+    for color in green_to_teal:
+        result.append([color]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [teal]*num_leds
+    result.append(frame)
+    
+    teal_to_blue = interpolate(teal, blue, interpolation_factor)  
+    for color in teal_to_blue:
+        result.append([color]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [blue]*num_leds
+    result.append(frame)
+    
+    blue_to_purple = interpolate(blue, purple, interpolation_factor)  
+    for color in blue_to_purple:
+        result.append([color]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [purple]*num_leds
+    result.append(frame)
+    
+    purple_to_white = interpolate(purple, white, interpolation_factor)  
+    for color in purple_to_white:
+        result.append([color]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [white]*num_leds
+    result.append(frame)
+    
+    return result
+
+patterns = {
+    0: (snek_forward, 0.5),
+    1: (snek_backward, 0.25),
+    2: (all_teal, 0.1),
+    3: (rainbow_forward, 1.0),
+    4: (rainbow_blinking_forward, 0.01),
+    5: (all_rainbow_gradient, .10),
+    6: (all_red, 1.0),
+    7: (all_orange, 1.0),
+    8: (all_green, 1.0),
+    9: (all_blue, 1.0)
 }
 
+switch_a = Pin(12, Pin.IN, Pin.PULL_UP)
+led_pin = Pin(15,Pin.OUT)
+neo_out = NeoPixel(led_pin, num_leds, 3)
 
-pind.irq(trigger=Pin.IRQ_RISING, handler=lambda p: off_handler(off_cmd, ALL_CMDS))
+uart = UART(1, 9600, tx=Pin(10), rx=Pin(9), timeout = 1)
+
+animator = Animator(neo_out)
 
 try:
-    haha[0] = (red)
-    haha.write()
 
     while True:
-     
-        cmd = read_pins()
-        if cmd in ALL_CMDS:
-            print("you been got, command", cmd)
-            haha[0] = (green)
-            haha.write()
-            off_handler(off_cmd, ALL_CMDS)
-            ALL_CMDS[cmd].execute()
-        elif cmd == 0:
-            for mycmd in ALL_CMDS.values():
-                if mycmd.active is True:
-                    mycmd.execute()
-                    break
-           
-        haha[0] = (red)
-        haha.write()
-       
-        sleep(.125)
-       
+        selection = uart.read(1)
+        #print(selection)
+        
+        my_choice = to_int(selection)
+        #print(my_choice)
+        
+        #my_choice = 4
+        if my_choice in patterns:
+            frames_function, sleep_duration = patterns[my_choice]
+            animator.set_animation(frames_function(), sleep_duration)
+        
+                 
+        animator.advance()
+        
 finally:
-    neo.fill(off)
-    neo.write()
-    haha[0]= (off)
-    haha.write()
+    neo_out.fill(off)
+    neo_out.write()
