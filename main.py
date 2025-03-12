@@ -13,24 +13,26 @@ teal = (0, 139, 139)
 blue = (0, 0, 255)
 purple: tuple[int, int, int] = (100, 0, 127)
 white = (255, 255, 255)
-num_leds: int = 21
+num_leds: int = 40
 interpolation_factor = 5
 #they are tuples which cannot be changed
 
 
-def interpolate(start_color, end_color, steps) -> list[tuple[int, int, int]]:
-    result = [white,]*steps
+def interpolate(start_color: tuple[int, int, int], end_color: tuple[int, int, int], steps: int) -> list[tuple[int, int, int]]:
+    result = [white]*steps
     result[0] = start_color
     result[-1] = end_color
     red_slope = (end_color[0] - start_color[0])/steps
     green_slope = (end_color[1] - start_color[1])/steps
     blue_slope = (end_color[2] - start_color[2])/steps
+    
     for indx in range(steps - 2):
         result_indx = indx + 1
         result_red = red_slope * result_indx + start_color[0]
         result_green = green_slope * result_indx + start_color[1]
         result_blue = blue_slope * result_indx + start_color[2]
         result[result_indx] = (int(result_red), int(result_green), int(result_blue))  
+    
     return result
 
 
@@ -67,27 +69,34 @@ class Animator:
                 self.pixels[idx] = led
 
             self.pixels.write()
-            sleep(self.sleep_duration)
-            self.current_frame_idx += 1
+            
+            if len(self.frames) > 1:
+                sleep(self.sleep_duration)
+                self.current_frame_idx += 1
 
-            # Check for current frame getting larger than our array
-            if self.current_frame_idx >= len(self.frames):
-                self.current_frame_idx = 0
+                # Check for current frame getting larger than our array
+                if self.current_frame_idx >= len(self.frames):
+                    self.current_frame_idx = 0
+                
+                
+def all_off():
+    result = []
+    frame: list[list[tupl[int, int, int]]] = [off]*num_leds
+    result.append(frame)
+    
+    return result
 
-def snek_forward() -> list[list[tuple[int, int, int]]]:
+def snek_forward_backward() -> list[list[tuple[int, int, int]]]:
     result: list[list[tuple[int, int, int]]] = []
+    
     for i in range(0, num_leds):
         frame: list[tuple[int, int, int]] = [off]*num_leds
         frame[i] = purple
         result.append(frame)
-
-    return result
-
-def snek_backward() -> list[list[tuple[int, int, int]]]:
-    result = []
+    
     for i in range(num_leds - 1, -1, -1):
         frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = blue
+        frame[i] = orange
         result.append(frame)
     
     return result
@@ -182,41 +191,34 @@ def rainbow_forward() -> list[list[tuple[int, int, int]]]:
 
 def rainbow_blinking_forward() -> list[list[tuple[int, int, int]]]:
     result = []
-    for i in range(num_leds):
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = red
-        result.append(frame)
-        result.append([off]*num_leds)
+    
+    frame: list[tuple[int, int, int]] = [red]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
+        
+    frame: list[tuple[int, int, int]] = [orange]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
             
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = orange
-        result.append(frame)
-        result.append([off]*num_leds)
+    frame: list[tuple[int, int, int]] = [green]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
             
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = green
-        result.append(frame)
-        result.append([off]*num_leds)
-            
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = teal
-        result.append(frame)
-        result.append([off]*num_leds)
+    frame: list[tuple[int, int, int]] = [teal]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
 
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = blue
-        result.append(frame)
-        result.append([off]*num_leds)
+    frame: list[tuple[int, int, int]] = [blue]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
 
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = purple
-        result.append(frame)
-        result.append([off]*num_leds)
+    frame: list[tuple[int, int, int]] = [purple]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
 
-        frame: list[tuple[int, int, int]] = [off]*num_leds
-        frame[i] = white
-        result.append(frame)
-        result.append([off]*num_leds)
+    frame: list[tuple[int, int, int]] = [white]*num_leds
+    result.append(frame)
+    result.append([off]*num_leds)
 
     return result
 
@@ -269,17 +271,30 @@ def all_rainbow_gradient() -> list[list[tuple[int, int, int]]]:
     
     return result
 
+def rainbow_gradient_long():
+    halfway = int(num_leds/2)
+    result = [off] * num_leds
+    result[0] = green
+    result[-1] = teal
+    result[halfway] = red
+    first_half = interpolate(result[0], result[-1], result[halfway])
+    
+    for led_color in (first_half):
+        enumerate(first_half)
+        result[led_color] = led_color
+        
+    for i in led_color:
+        result[i, first_half] = led_color
+
 patterns = {
-    b"0": (snek_forward, 0.5),
-    b"1": (snek_backward, 0.25),
-    b"2": (all_teal, 0.1),
-    b"3": (rainbow_forward, 1.0),
-    b"4": (rainbow_blinking_forward, 0.01),
-    b"5": (all_rainbow_gradient, .10),
-    b"6": (all_red, 1.0),
-    b"7": (all_orange, 1.0),
-    b"8": (all_green, 1.0),
-    b"9": (all_blue, 1.0)
+    b"0": (snek_forward_backward, 0.5),
+    b"1": (rainbow_blinking_forward, 0.8),
+    b"2": (all_rainbow_gradient, 0.10),
+    b"3": (all_purple, 1.0),
+    b"4": (all_teal, 1.0),
+    b"5": (all_orange, 0.10),
+    b"6": (all_off, 1.0),
+    b"7": (rainbow_gradient_long, 1.0)
 }
 
 switch_a = Pin(12, Pin.IN, Pin.PULL_UP)
@@ -305,3 +320,4 @@ try:
 finally:
     neo_out.fill(off)
     neo_out.write()
+    
