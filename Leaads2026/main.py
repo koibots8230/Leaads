@@ -6,6 +6,8 @@ from pimoroni import RGBLED
 #from plasma import plasma2040
 import plasma
 
+DATA_PIN = 15
+
 off: tuple[int, int, int] = (0, 0, 0)
 
 red: tuple[int, int, int] = (255, 0, 0)
@@ -277,7 +279,7 @@ patterns = {
     b"5": (tada, 0.10), # Climbing
 }
 
-led_pin = Pin(15,Pin.OUT)
+led_pin = Pin(DATA_PIN,Pin.OUT)
 neo_out = NeoPixel(led_pin, num_leds, 3)
 
 
