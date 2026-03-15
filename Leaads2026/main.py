@@ -421,6 +421,17 @@ def fade(
 def half_tone(color : tuple(int,int,int)):
     return tuple(c >> 1 for c in color)
 
+## Duplicates a frame count times
+def dup(frame : list[tuple[int,int,int]],
+        count : int
+)-> list[list[tuple[int,int,int]]] :
+    result = []
+    if count > 0:
+        for _ in range(count):
+            result.append(frame)
+
+    return result
+
 fluid_cylon = lambda : compose(lambda : cylon(half_tone(red), 5, 15, 3, 10, 3),
                                lambda : fade([half_tone(red) if i == 5 else (0,0,0) for i in range(num_leds)],
                                              [half_tone(blue) if i == 5 else (0,0,0) for i in range(num_leds)],
@@ -430,6 +441,15 @@ fluid_cylon = lambda : compose(lambda : cylon(half_tone(red), 5, 15, 3, 10, 3),
                                              [half_tone(red) if i == 5 else (0,0,0) for i in range(num_leds)],
                                              10))
 
+ambiguous_alliance = lambda : compose(lambda : dup(all_half_red, 20),
+                                      lambda : fade(all_half_red,
+                                                    all_half_blue,
+                                                    8),
+                                      lambda : dup(all_half_blue, 20),
+                                      lambda : fade(all_half_blue,
+                                                    all_half_red,
+                                                    8))
+
 patterns = {
     b"0": (orange_purple_gradient_long, 0.10), # Default
     b"1": (dueling_serpents, 0.20), # Auto/ Transition Shift
@@ -438,7 +458,7 @@ patterns = {
     b"4": (rainbow_gradient_long_run, 0.010), # End Game
     b"5": (tada, 0.10), # Climbing
     b"6": (lambda : cylon(half_tone(red), 5, 15, 3, 30, 3), .5 / num_leds),
-    b"7": (fliud_cylon, .5 / num_leds)
+    b"7": (fluid_cylon, .5 / num_leds)
 }
 
 led_pin = Pin(LED_DATA_PIN,Pin.OUT)
@@ -448,9 +468,15 @@ uart = UART(1, 9600, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
 
 animator = Animator(neo_out)
 
-robot_key = b"0"
-frames_function, sleep_duration = patterns[robot_key]
-animator.set_animation(frames_function(), sleep_duration)
+# Default animation is ambiguous alliance
+animator.set_animation(compose(lambda : dup(all_half_red, 20),
+                               lambda : fade(all_half_red,
+                                             all_half_blue,
+                                             8),
+                               lambda : dup(all_half_blue, 20),
+                               lambda : fade(all_half_blue,
+                                             all_half_red,
+                                             8)), 0.05)
 
 try:
 
