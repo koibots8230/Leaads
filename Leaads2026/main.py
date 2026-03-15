@@ -270,6 +270,10 @@ def tada():
 
     
     return result
+
+## Lambda which selects a single frame from an animation, for debugging
+## Use like this: frame_func = lambda: one_frame(base_animataion, frame_idx)()
+one_frame = lambda frames, idx: (lambda: [frames[idx]])
     
 patterns = {
     b"0": (orange_purple_gradient_long, 0.10), # Default
