@@ -79,8 +79,8 @@ class Animator:
             self.pixels.write()
             
             if len(self.frames) > 1:
-#                 print("going to sleep for " + str(self.sleep_duration))
-#                sleep(self.sleep_duration)
+                print("Sleeping for " + str(self.sleep_duration))
+                sleep(self.sleep_duration)
                 self.current_frame_idx += 1
 
                 # Check for current frame getting larger than our array
