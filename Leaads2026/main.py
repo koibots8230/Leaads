@@ -291,6 +291,8 @@ uart = UART(1, 9600, tx=Pin(10), rx=Pin(9), timeout = 1)
 animator = Animator(neo_out)
 
 robot_key = b"0"
+frames_function, sleep_duration = patterns[robot_key]
+animator.set_animation(frames_function(), sleep_duration)
 
 try:
 
@@ -300,10 +302,11 @@ try:
         if(read_key is not None and read_key in patterns):
             robot_key = read_key
 
-        if(robot_key in patterns):
-            frames_function, sleep_duration = patterns[robot_key]
-            animator.set_animation(frames_function(), sleep_duration)
-            animator.advance()
+            if(robot_key in patterns):
+                frames_function, sleep_duration = patterns[robot_key]
+                animator.set_animation(frames_function(), sleep_duration)
+
+        animator.advance()
         
 finally:
     neo_out.fill(off)
