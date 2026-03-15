@@ -7,6 +7,8 @@ from pimoroni import RGBLED
 import plasma
 
 DATA_PIN = 15
+debug_print = False
+debug_single_step = False
 
 off: tuple[int, int, int] = (0, 0, 0)
 
@@ -76,12 +78,14 @@ class Animator:
             if self.current_frame_idx == 0 or self.current_frame_idx < frame_count:
                 for idx, led in enumerate(self.get_current_frame()):
                     self.pixels[idx] = led
-                print("Writing frame " + str(self.current_frame_idx) + " / " + str(frame_count))
+                if debug_print:
+                    print("Writing frame " + str(self.current_frame_idx) + " / " + str(frame_count))
                 self.pixels.write()
 		self.current_frame_idx += 1
 
             if frame_count > 1:
-                print("Sleeping for " + str(self.sleep_duration))
+                if debug_print:
+                    print("Sleeping for " + str(self.sleep_duration))
                 sleep(self.sleep_duration)
 
                 # Check for current frame getting larger than our array
@@ -334,8 +338,6 @@ robot_key = b"0"
 frames_function, sleep_duration = patterns[robot_key]
 animator.set_animation(frames_function(), sleep_duration)
 
-single_step = False
-
 try:
 
     while True:
@@ -348,7 +350,7 @@ try:
                 frames_function, sleep_duration = patterns[robot_key]
                 animator.set_animation(frames_function(), sleep_duration)
 
-        if(single_step):
+        if(debug_single_step):
             print("Press ENTER to step")
             input()
 
