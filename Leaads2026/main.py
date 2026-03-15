@@ -441,6 +441,9 @@ fluid_cylon = lambda : compose(lambda : cylon(half_tone(red), 5, 15, 3, 10, 3),
                                              [half_tone(red) if i == 5 else (0,0,0) for i in range(num_leds)],
                                              10))
 
+all_half_red = [half_tone(red)] * num_leds;
+all_half_blue = [half_tone(blue)] * num_leds;
+
 ambiguous_alliance = lambda : compose(lambda : dup(all_half_red, 20),
                                       lambda : fade(all_half_red,
                                                     all_half_blue,
@@ -467,6 +470,9 @@ neo_out = NeoPixel(led_pin, num_leds, 3)
 uart = UART(1, 9600, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
 
 animator = Animator(neo_out)
+
+# Full demo of all patterns
+# frames_function = lambda : compose(*[item[0] for item in patterns.values()])
 
 # Default animation is ambiguous alliance
 animator.set_animation(ambiguous_alliance(), 0.05)
