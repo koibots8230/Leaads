@@ -274,7 +274,43 @@ def tada():
 ## Lambda which selects a single frame from an animation, for debugging
 ## Use like this: frame_func = lambda: one_frame(base_animataion, frame_idx)()
 one_frame = lambda frames, idx: (lambda: [frames[idx]])
-    
+
+## Lambda which composes any number of functions
+compose = lambda *funcs: [item for func in funcs for item in func()]
+
+## Creates an animation of a fade between two frames using
+## linear interpolation.
+def fade(
+    start_frame: list[tuple[int,int,int]],
+    end_frame: list[tuple[int,int,int]],
+    steps: int = 5
+) -> list[list[tuple[int,int,int]]]:
+    result = []
+
+    # Calculate the delta for each pixel
+    delta_frame = [
+        (
+            (end_r - start_r) / steps,
+            (end_g - start_g) / steps,
+            (end_b - start_b) / steps
+        )
+        for (start_r, start_g, start_b), (end_r, end_g, end_b) in zip(start_frame, end_frame)
+    ]
+
+    # Build frames by applying the delta step by step
+    for step in range(1, steps + 1):
+        frame = [
+            (
+                int(start_r + delta_r * step),
+                int(start_g + delta_g * step),
+                int(start_b + delta_b * step)
+            )
+            for (start_r, start_g, start_b), (delta_r, delta_g, delta_b) in zip(start_frame, delta_frame)
+        ]
+        result.append(frame)
+
+    return result
+
 patterns = {
     b"0": (orange_purple_gradient_long, 0.10), # Default
     b"1": (dueling_serpents, 0.20), # Auto/ Transition Shift
