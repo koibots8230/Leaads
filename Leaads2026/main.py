@@ -84,9 +84,10 @@ class Animator:
 		self.current_frame_idx += 1
 
             if frame_count > 1:
-                if debug_print:
-                    print("Sleeping for " + str(self.sleep_duration))
-                sleep(self.sleep_duration)
+                if self.sleep_duration > 0:
+                    if debug_print:
+                        print("Sleeping for " + str(self.sleep_duration))
+                    sleep(self.sleep_duration)
 
                 # Check for current frame getting larger than our array
                 if self.current_frame_idx >= frame_count:
