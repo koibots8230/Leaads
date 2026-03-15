@@ -76,7 +76,7 @@ class Animator:
             if self.current_frame_idx == 0 or self.current_frame_idx < frame_count:
                 for idx, led in enumerate(self.get_current_frame()):
                     self.pixels[idx] = led
-
+                print("Writing frame " + str(self.current_frame_idx) + " / " + str(frame_count))
                 self.pixels.write()
 		self.current_frame_idx += 1
             
