@@ -6,7 +6,9 @@ from pimoroni import RGBLED
 #from plasma import plasma2040
 import plasma
 
-DATA_PIN = 15
+LED_DATA_PIN = 15
+SER_TX_PIN=10
+SER_RX_PIN=9
 debug_print = False
 debug_single_step = False
 
@@ -329,13 +331,10 @@ patterns = {
     b"5": (tada, 0.10), # Climbing
 }
 
-led_pin = Pin(DATA_PIN,Pin.OUT)
+led_pin = Pin(LED_DATA_PIN,Pin.OUT)
 neo_out = NeoPixel(led_pin, num_leds, 3)
 
-
-
-
-uart = UART(1, 9600, tx=Pin(10), rx=Pin(9), timeout = 1)
+uart = UART(1, 9600, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
 
 animator = Animator(neo_out)
 
