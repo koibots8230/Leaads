@@ -315,6 +315,10 @@ def fade(
 
     return result
 
+## Returns a color which is half as bright (RGB values / 2)
+def half_tone(color : tuple(int,int,int)):
+    return tuple(c >> 1 for c in color)
+
 patterns = {
     b"0": (orange_purple_gradient_long, 0.10), # Default
     b"1": (dueling_serpents, 0.20), # Auto/ Transition Shift
