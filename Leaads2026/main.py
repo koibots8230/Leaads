@@ -278,6 +278,105 @@ def tada():
 
     return result
 
+
+def cylon(base_color: tuple[int, int, int] = red,
+          start_idx: int = 0,
+          end_idx: int = num_leds,
+          tail_length: int = 6,
+          initial_pause_frames: int = 10,
+          halfway_pause_frames: int = 3) -> list[list[tuple[int, int, int]]]:
+
+    # ---- argument checks ----
+    if end_idx > num_leds - 1:
+        end_idx = num_leds - 1
+    if start_idx < 0:
+        start_idx = 0
+    if start_idx > end_idx:
+        start_idx = end_idx
+    if tail_length < 0:
+        tail_length = 0
+    if tail_length > (end_idx - start_idx):
+        tail_length = end_idx - start_idx
+
+    print(f"building cylon animation start={start_idx}, end={end_idx}, tail_length={tail_length}")
+
+    result: list[list[tuple[int, int, int]]] = []
+
+    def scale_color(color, factor):
+        r, g, b = color
+        return int(r*factor), int(g*factor), int(b*factor)
+
+    def make_frame(head_pos, direction):
+        frame = [off] * num_leds
+
+        # head
+        frame[head_pos] = base_color
+
+        # tail
+        for t in range(1, tail_length + 1):
+            tail_pos = head_pos - (direction * t)
+
+            if start_idx <= tail_pos <= end_idx:
+                # Linear fade
+                #fade = (tail_length - t + 1) / (tail_length + 1)
+                # Quadratic fade
+                fade = ((tail_length - t + 1) / (tail_length + 1)) ** 2
+                frame[tail_pos] = scale_color(base_color, fade)
+
+        return frame
+
+    # ---- initial pause ----
+    if initial_pause_frames > 0:
+        frame = make_frame(start_idx, 1)
+        for _ in range(initial_pause_frames):
+            result.append(frame)
+
+    head = start_idx
+    direction = 1
+
+    while True:
+        # move until endpoint
+        while start_idx <= head + direction <= end_idx:
+            head += direction
+            result.append(make_frame(head, direction))
+
+        # endpoint reached
+        endpoint = head
+
+        # tail catch-up
+        for remaining in range(tail_length, 0, -1):
+            frame = [off]*num_leds
+            frame = list(frame)
+
+            # keep head fully lit
+            frame[endpoint] = base_color
+
+            # draw remaining tail approaching the head
+            for t in range(1, remaining + 1):
+                tail_pos = endpoint - (direction * t)
+
+                if start_idx <= tail_pos <= end_idx:
+                    fade = (remaining - t + 1) / (tail_length + 1)
+                    frame[tail_pos] = scale_color(base_color, fade)
+
+            result.append(frame)
+
+        # pause at endpoint
+        if initial_pause_frames > 0:
+            frame = [off] * num_leds
+            frame[endpoint] = base_color
+            for _ in range(halfway_pause_frames):
+                result.append(frame)
+
+        # reverse direction
+        direction *= -1
+
+        # stop once we have completed a full cycle
+        if endpoint == start_idx and direction == 1:
+            break
+
+    return result
+
 ## Lambda which selects a single frame from an animation, for debugging
 ## Use like this: frame_func = lambda: one_frame(base_animataion, frame_idx)()
 one_frame = lambda frames, idx: (lambda: [frames[idx]])
@@ -322,6 +421,15 @@ def fade(
 def half_tone(color : tuple(int,int,int)):
     return tuple(c >> 1 for c in color)
 
+fluid_cylon = lambda : compose(lambda : cylon(half_tone(red), 5, 15, 3, 10, 3),
+                               lambda : fade([half_tone(red) if i == 5 else (0,0,0) for i in range(num_leds)],
+                                             [half_tone(blue) if i == 5 else (0,0,0) for i in range(num_leds)],
+                                             10),
+                               lambda : cylon(half_tone(blue), 5, 15, 3, 10, 3),
+                               lambda : fade([half_tone(blue) if i == 5 else (0,0,0) for i in range(num_leds)],
+                                             [half_tone(red) if i == 5 else (0,0,0) for i in range(num_leds)],
+                                             10))
+
 patterns = {
     b"0": (orange_purple_gradient_long, 0.10), # Default
     b"1": (dueling_serpents, 0.20), # Auto/ Transition Shift
@@ -329,6 +437,8 @@ patterns = {
     b"3": (breathe_orange_purple, 0.1), # Hub inst ative
     b"4": (rainbow_gradient_long_run, 0.010), # End Game
     b"5": (tada, 0.10), # Climbing
+    b"6": (lambda : cylon(half_tone(red), 5, 15, 3, 30, 3), .5 / num_leds),
+    b"7": (fliud_cylon, .5 / num_leds)
 }
 
 led_pin = Pin(LED_DATA_PIN,Pin.OUT)
