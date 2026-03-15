@@ -469,14 +469,7 @@ uart = UART(1, 9600, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
 animator = Animator(neo_out)
 
 # Default animation is ambiguous alliance
-animator.set_animation(compose(lambda : dup(all_half_red, 20),
-                               lambda : fade(all_half_red,
-                                             all_half_blue,
-                                             8),
-                               lambda : dup(all_half_blue, 20),
-                               lambda : fade(all_half_blue,
-                                             all_half_red,
-                                             8)), 0.05)
+animator.set_animation(ambiguous_alliance(), 0.05)
 
 try:
 
