@@ -71,20 +71,21 @@ class Animator:
         """
         Update the LEDs to the next frame
         """
-        if len(self.frames) > 0:
+        frame_count = len(self.frames)
+        if frame_count > 0:
         
             for idx, led in enumerate(self.get_current_frame()):
                 self.pixels[idx] = led
 
             self.pixels.write()
             
-            if len(self.frames) > 1:
+            if frame_count > 1:
                 print("Sleeping for " + str(self.sleep_duration))
                 sleep(self.sleep_duration)
                 self.current_frame_idx += 1
 
                 # Check for current frame getting larger than our array
-                if self.current_frame_idx >= len(self.frames):
+                if self.current_frame_idx >= frame_count:
                     self.current_frame_idx = 0
 
 def interpolate(start_color: tuple[int, int, int], end_color: tuple[int, int, int], steps: int) -> list[tuple[int, int, int]]:
