@@ -294,6 +294,8 @@ robot_key = b"0"
 frames_function, sleep_duration = patterns[robot_key]
 animator.set_animation(frames_function(), sleep_duration)
 
+single_step = False
+
 try:
 
     while True:
@@ -305,6 +307,10 @@ try:
             if(robot_key in patterns):
                 frames_function, sleep_duration = patterns[robot_key]
                 animator.set_animation(frames_function(), sleep_duration)
+
+        if(single_step):
+            print("Press ENTER to step")
+            input()
 
         animator.advance()
         
