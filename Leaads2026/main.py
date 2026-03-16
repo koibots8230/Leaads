@@ -6,9 +6,37 @@ from pimoroni import RGBLED
 #from plasma import plasma2040
 import plasma
 
+# LED_DATA_PIN - The GPIO pin to use for LED data.
+# Pimoroni Plasma 2350 - should be 15
+# Pimoroni Tiny 2350   - Can be 0-7, recommend 0
 LED_DATA_PIN = 15
+
+# SER_TX_PIN - The GPIO pin used for serial transmit
+# Pimoroni Plasma 2350 - should be 0 for soldered, 10 for SP/CE
+# Pimoroni Tiny 2350   - 0 or 2 for UART device 0 when soldered,
+#                        4 or 6 for UART device 1 when soldered,
+#                        12 with UART device 0 for QW/ST
 SER_TX_PIN=10
+
+# SER_TX_PIN - The GPIO pin used for serial transmit
+# Pimoroni Plasma 2350 - should be 1 for soldered, 9 for SP/CE
+# Pimoroni Tiny 2350   - 1 or 3 for UART device 0 when soldered,
+#                        5 or 7 for UART device 1 when soldered,
+#                        13 with UART device 0 for QW/ST
 SER_RX_PIN=9
+
+# SER_UART_DEV - The UART device number to use - 0 or 1
+# Pimoroni Plasma 2350 - should be 0 for soldered, 1 for SP/CE
+# Pimoroni Tiny 2350   - should be 0 for TX/RX pins 0-3, or QW/ST,
+#                                  1 for TX/RX pins 4-7
+SER_UART_DEV = 1
+
+# Baud rate for serial
+# MUST match configured value on the computer end. Recommend 9600
+# as we are sending single bytes for control so bandwidth isn't
+# important.
+UART_BAUD_RATE = 9600
+
 debug_print = False
 debug_single_step = False
 
@@ -467,7 +495,7 @@ patterns = {
 led_pin = Pin(LED_DATA_PIN,Pin.OUT)
 neo_out = NeoPixel(led_pin, num_leds, 3)
 
-uart = UART(1, 9600, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
+uart = UART(SER_UART_DEV, UART_BAUD_RATE, tx=Pin(SER_TX_PIN), rx=Pin(SER_RX_PIN), timeout = 1)
 
 animator = Animator(neo_out)
 
