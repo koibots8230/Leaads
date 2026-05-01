@@ -1,15 +1,16 @@
 # Getting Started
 1. Install [Thonny](https://thonny.org/)
+
 1. Install Mycropython Firmware for RP2 / Pimoroni - Tiny 2024 (w/Pimoroni Libraries)
     1. Connect device to USB while holding RESET to convert to USB mode
     1. Hold BOOT, press RESET, release RESET to convert to USB mode
     1. In Thonny, go to Run > Configure Interpreter, then "Install or update MicroPython"
+
 1. Connect the LED strip
     1. +5V
     1. GND
-    1. Data to GP0 pin (Tiny 2350) or GP15 / DATA pin (Plasma 2350)
-    1. TX to GP0?
-    1. RX to GP2?
+    1. Data (check main.py for recommended and configured pins)
+
 1. Try to get a sample running
     ```
     import machine
@@ -44,6 +45,12 @@
 1. Install the code on the board so it runs without USB connection
     1. In Thonny, click "Save" and choose "RP2040" (or similar)
     1. Name the file `main.py`
+
+1. Set up serial connection for control
+    1. TX and RX pins (check main.py for recommended and configured pins)
+    1. In Robot code, use the SerialPort class. You probably want the kOnboard
+       port. Match baud rate. Send pattern numbers as a single byte (e.g. 0x01)
+       not as strings (e.g. "1" which is 0x31).
 
 1. Try something more advanced like PWM for brightness
     1. https://forums.pimoroni.com/t/tiny-2040-rgb-led-control-tutorial/16604
